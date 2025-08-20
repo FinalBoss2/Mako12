@@ -10,7 +10,7 @@ screenGui.Name = "ESPGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
--- Toggle Button
+-- Toggle Button (mobile-friendly draggable)
 local toggleButton = Instance.new("TextButton")
 toggleButton.Size = UDim2.new(0, 120, 0, 50)
 toggleButton.Position = UDim2.new(0.05, 0, 0.1, 0)
@@ -22,6 +22,14 @@ toggleButton.Active = true
 toggleButton.Draggable = true
 
 local espEnabled = false
+
+-- Fix for mobile: allow activation while dragging
+toggleButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        toggleButton:CaptureFocus()
+    end
+end)
+
 toggleButton.Activated:Connect(function()
     espEnabled = not espEnabled
     if espEnabled then
