@@ -2,9 +2,8 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local camera = workspace.CurrentCamera
 local localPlayer = Players.LocalPlayer
-local UIS = game:GetService("UserInputService")
 
--- GUI Setup
+-- GUI Toggle Setup
 local gui = Instance.new("ScreenGui", localPlayer:WaitForChild("PlayerGui"))
 gui.Name = "ESP_Toggle"
 gui.ResetOnSpawn = false
@@ -28,12 +27,12 @@ button.MouseButton1Click:Connect(function()
     button.BackgroundColor3 = espEnabled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
 end)
 
--- ESP Creation
+-- Create ESP visuals
 local function createESP(player)
     local box = Drawing.new("Square")
     box.Thickness = 2
     box.Filled = false
-    box.Color = Color3.new(1, 1, 1)
+    box.Color = Color3.fromRGB(0, 255, 0) -- Green box
 
     local nameTag = Drawing.new("Text")
     nameTag.Size = 16
@@ -55,6 +54,7 @@ local function removeESP(player)
     end
 end
 
+-- Track players
 Players.PlayerAdded:Connect(function(player)
     if player ~= localPlayer then
         createESP(player)
@@ -69,7 +69,7 @@ for _, player in pairs(Players:GetPlayers()) do
     end
 end
 
--- ESP Update Loop
+-- Update ESP every frame
 RunService.RenderStepped:Connect(function()
     for player, obj in pairs(espObjects) do
         local char = player.Character
