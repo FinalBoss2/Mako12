@@ -1,3 +1,4 @@
+loadstring([[
 -- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -10,7 +11,7 @@ screenGui.Name = "ESPGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
--- Toggle Button (mobile-friendly draggable)
+-- Toggle Button
 local toggleButton = Instance.new("TextButton")
 toggleButton.Size = UDim2.new(0, 120, 0, 50)
 toggleButton.Position = UDim2.new(0.05, 0, 0.1, 0)
@@ -103,3 +104,4 @@ end)
 
 -- Run ESP
 RunService.RenderStepped:Connect(updateESP)
+]])()
