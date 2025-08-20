@@ -1,107 +1,99 @@
-loadstring([[
--- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local Camera = workspace.CurrentCamera
-local LocalPlayer = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+local localPlayer = Players.LocalPlayer
+local UIS = game:GetService("UserInputService")
 
 -- GUI Setup
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "ESPGui"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+local gui = Instance.new("ScreenGui", localPlayer:WaitForChild("PlayerGui"))
+gui.Name = "ESP_Toggle"
+gui.ResetOnSpawn = false
 
--- Toggle Button
-local toggleButton = Instance.new("TextButton")
-toggleButton.Size = UDim2.new(0, 120, 0, 50)
-toggleButton.Position = UDim2.new(0.05, 0, 0.1, 0)
-toggleButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-toggleButton.Text = "ESP OFF"
-toggleButton.TextScaled = true
-toggleButton.Parent = screenGui
-toggleButton.Active = true
-toggleButton.Draggable = true
+local button = Instance.new("TextButton", gui)
+button.Size = UDim2.new(0, 120, 0, 40)
+button.Position = UDim2.new(0, 100, 0, 100)
+button.Text = "ESP OFF"
+button.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+button.TextColor3 = Color3.new(1, 1, 1)
+button.Active = true
+button.Draggable = true
 
 local espEnabled = false
+local espObjects = {}
 
--- Fix for mobile: allow activation while dragging
-toggleButton.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-        toggleButton:CaptureFocus()
-    end
-end)
-
-toggleButton.Activated:Connect(function()
+-- Toggle ESP
+button.MouseButton1Click:Connect(function()
     espEnabled = not espEnabled
-    if espEnabled then
-        toggleButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-        toggleButton.Text = "ESP ON"
-    else
-        toggleButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        toggleButton.Text = "ESP OFF"
-    end
+    button.Text = espEnabled and "ESP ON" or "ESP OFF"
+    button.BackgroundColor3 = espEnabled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
 end)
 
--- ESP Storage
-local espBoxes = {}
-
--- Create ESP Box
+-- ESP Creation
 local function createESP(player)
-    if player == LocalPlayer then return end
-    local box = Instance.new("Frame")
-    box.Size = UDim2.new(0, 50, 0, 100)
-    box.BorderSizePixel = 2
-    box.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-    box.Parent = screenGui
+    local box = Drawing.new("Square")
+    box.Thickness = 2
+    box.Filled = false
+    box.Color = Color3.new(1, 1, 1)
 
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, 0, 0, 30)
-    label.Position = UDim2.new(0, 0, 0, -30)
-    label.BackgroundTransparency = 1
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.TextScaled = true
-    label.Parent = box
+    local nameTag = Drawing.new("Text")
+    nameTag.Size = 16
+    nameTag.Center = true
+    nameTag.Outline = true
+    nameTag.Color = Color3.new(1, 1, 1)
 
-    return {box = box, label = label}
+    espObjects[player] = {
+        box = box,
+        nameTag = nameTag
+    }
 end
 
--- Update ESP
-local function updateESP()
-    for _, player in pairs(Players:GetPlayers()) do
+local function removeESP(player)
+    if espObjects[player] then
+        espObjects[player].box:Remove()
+        espObjects[player].nameTag:Remove()
+        espObjects[player] = nil
+    end
+end
+
+Players.PlayerAdded:Connect(function(player)
+    if player ~= localPlayer then
+        createESP(player)
+    end
+end)
+
+Players.PlayerRemoving:Connect(removeESP)
+
+for _, player in pairs(Players:GetPlayers()) do
+    if player ~= localPlayer then
+        createESP(player)
+    end
+end
+
+-- ESP Update Loop
+RunService.RenderStepped:Connect(function()
+    for player, obj in pairs(espObjects) do
         local char = player.Character
         if char and char:FindFirstChild("HumanoidRootPart") then
-            local root = char.HumanoidRootPart
-            local pos, onScreen = Camera:WorldToViewportPoint(root.Position)
-            if espEnabled then
-                if not espBoxes[player] then
-                    espBoxes[player] = createESP(player)
-                end
-                local data = espBoxes[player]
-                if onScreen then
-                    local distance = math.floor((root.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude)
-                    data.box.Position = UDim2.new(0, pos.X - 25, 0, pos.Y - 50)
-                    data.label.Position = UDim2.new(0, 0, 0, -30)
-                    data.label.Text = player.Name .. " [" .. distance .. "m]"
-                    data.box.Visible = true
-                else
-                    data.box.Visible = false
-                end
-            elseif espBoxes[player] then
-                espBoxes[player].box:Destroy()
-                espBoxes[player] = nil
+            local hrp = char.HumanoidRootPart
+            local pos, onScreen = camera:WorldToViewportPoint(hrp.Position)
+
+            if espEnabled and onScreen then
+                local distance = math.floor((hrp.Position - camera.CFrame.Position).Magnitude)
+
+                obj.box.Size = Vector2.new(60, 80)
+                obj.box.Position = Vector2.new(pos.X - 30, pos.Y - 40)
+                obj.box.Visible = true
+
+                obj.nameTag.Text = player.Name .. " [" .. distance .. "m]"
+                obj.nameTag.Position = Vector2.new(pos.X, pos.Y - 50)
+                obj.nameTag.Visible = true
+            else
+                obj.box.Visible = false
+                obj.nameTag.Visible = false
             end
+        else
+            obj.box.Visible = false
+            obj.nameTag.Visible = false
         end
     end
-end
-
--- Cleanup on leave
-Players.PlayerRemoving:Connect(function(player)
-    if espBoxes[player] then
-        espBoxes[player].box:Destroy()
-        espBoxes[player] = nil
-    end
 end)
-
--- Run ESP
-RunService.RenderStepped:Connect(updateESP)
-]])()
